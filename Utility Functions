@@ -1,0 +1,58 @@
+pub fn bonding_curve_price(supply: u64, k: u64, n: u64) -> u64 {
+    k * supply.pow(n as u32)
+}
+
+pub fn calculate_fee(market_cap: u64, fee_max: u64, market_cap_min: u64, decay_rate: u64) -> u64 {
+    if market_cap <= market_cap_min {
+        return fee_max;
+    }
+    let fee = (fee_max as f64) * (std::f64::consts::E.powf(-decay_rate as f64 * (market_cap - market_cap_min) as f64));
+    fee as u64
+}
+
+pub fn calculate_fee_in_sol(
+    market_cap: u64,
+    fee_max: u64,
+    market_cap_min: u64,
+    decay_rate: u64,
+    amount_in: u64,
+    pool: &Pool,
+) -> Result<u64> {
+    let fee_percentage = calculate_fee(market_cap, fee_max, market_cap_min, decay_rate);
+    let fee_in_spl = amount_in * fee_percentage / 100;
+
+    let price_in_sol = match get_spl_to_sol_price() {
+        Ok(price) => price,
+        Err(_) => pool.fallback_price,
+    };
+
+    let fee_in_sol = fee_in_spl * price_in_sol;
+    Ok(fee_in_sol)
+}
+
+pub fn distribute_fee(ctx: Context<DistributeFee>, total_fee_in_sol: u64, pool: &mut Pool) -> Result<()> {
+    let treasury_fee = total_fee_in_sol * pool.treasury_split / 100;
+    let lp_fee = total_fee_in_sol - treasury_fee;
+
+    system_program::transfer(
+        &ctx.accounts.system_program.to_account_info(),
+        &ctx.accounts.user.to_account_info(),
+        &ctx.accounts.treasury.to_account_info(),
+        treasury_fee,
+    )?;
+
+    system_program::transfer(
+        &ctx.accounts.system_program.to_account_info(),
+        &ctx.accounts.user.to_account_info(),
+        &ctx.accounts.lp_rewards.to_account_info(),
+        lp_fee,
+    )?;
+
+    Ok(())
+}
+
+pub fn get_spl_to_sol_price() -> Result<f64> {
+    // Stub for fetching the price from an oracle
+    // Replace with actual oracle integration
+    Ok(1.0) // Example: 1 SPL = 1 SOL
+}
