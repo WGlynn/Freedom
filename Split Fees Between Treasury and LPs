@@ -1,0 +1,26 @@
+pub fn distribute_fee(
+    ctx: Context<DistributeFee>,
+    total_fee_in_sol: u64,
+    pool: &mut Pool,
+) -> Result<()> {
+    // Calculate splits
+    let treasury_fee = total_fee_in_sol * pool.treasury_split / 100;
+    let lp_fee = total_fee_in_sol - treasury_fee;
+
+    // Transfer to treasury
+    system_program::transfer(
+        &ctx.accounts.system_program.to_account_info(),
+        &ctx.accounts.user.to_account_info(),
+        &ctx.accounts.treasury.to_account_info(),
+        treasury_fee,
+    )?;
+
+    // Transfer to LP rewards
+    system_program::transfer(
+        &ctx.accounts.system_program.to_account_info(),
+        &ctx.accounts.user.to_account_info(),
+        &ctx.accounts.lp_rewards.to_account_info(),
+        lp_fee,
+    )?;
+    Ok(())
+}
