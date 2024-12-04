@@ -1,0 +1,20 @@
+pub fn adjust_liquidity(ctx: Context<AdjustLiquidity>, add: bool, amount: u64) -> Result<()> {
+    let pool = &mut ctx.accounts.pool;
+    let k = pool.curve_constant;
+    let n = pool.curve_exponent;
+
+    // Calculate current locked liquidity
+    let locked_liq = locked_liquidity(pool.token_supply, k, n);
+
+    if add {
+        // Add liquidity
+        pool.liquidity += amount;
+    } else {
+        // Ensure withdrawals don't breach locked liquidity
+        if pool.liquidity - amount < locked_liq {
+            return Err(ErrorCode::LiquidityLockViolation.into());
+        }
+        pool.liquidity -= amount;
+    }
+    Ok(())
+}
