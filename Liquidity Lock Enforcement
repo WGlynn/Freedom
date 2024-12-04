@@ -1,0 +1,8 @@
+pub fn locked_liquidity(supply: u64, k: u64, n: u64) -> u64 {
+    // Market cap = P(S) * S
+    let market_cap = bonding_curve_price(supply, k, n) * supply;
+
+    // Locked liquidity = 20% of market cap
+    let locked_liq = market_cap / 5; // 20% = 1/5
+    locked_liq
+}
