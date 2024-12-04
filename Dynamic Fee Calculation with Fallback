@@ -1,0 +1,25 @@
+pub fn calculate_fee_in_sol(
+    market_cap: u64,
+    fee_max: u64,
+    market_cap_min: u64,
+    decay_rate: u64,
+    amount_in: u64,
+    pool: &Pool,
+) -> Result<u64> {
+    // Dynamic fee percentage in SPL tokens
+    let fee_percentage = calculate_fee(market_cap, fee_max, market_cap_min, decay_rate);
+    let fee_in_spl = amount_in * fee_percentage / 100;
+
+    // Fetch the SPL-to-SOL price, with fallback
+    let price_in_sol = match get_spl_to_sol_price() {
+        Ok(price) => price,
+        Err(_) => {
+            // Use fallback price if oracle fails
+            pool.fallback_price
+        }
+    };
+
+    // Convert SPL fee into SOL
+    let fee_in_sol = fee_in_spl * price_in_sol;
+    Ok(fee_in_sol)
+}
