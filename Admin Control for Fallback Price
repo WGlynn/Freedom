@@ -1,0 +1,11 @@
+pub fn update_fallback_price(ctx: Context<UpdateFallbackPrice>, new_price: u64) -> Result<()> {
+    let pool = &mut ctx.accounts.pool;
+
+    // Ensure only admin or governance can update
+    require!(ctx.accounts.admin.key() == pool.admin, ErrorCode::Unauthorized);
+
+    // Update fallback price and timestamp
+    pool.fallback_price = new_price;
+    pool.fallback_last_updated = Clock::get()?.unix_timestamp;
+    Ok(())
+}
