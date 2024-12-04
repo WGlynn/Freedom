@@ -1,0 +1,44 @@
+#[account]
+pub struct Pool {
+    pub token_supply: u64,
+    pub curve_constant: u64,
+    pub curve_exponent: u64,
+    pub market_cap: u64,
+    pub fee_max: u64,
+    pub market_cap_min: u64,
+    pub decay_rate: u64,
+    pub treasury_split: u64,
+    pub fallback_price: u64,
+    pub fallback_last_updated: i64,
+    pub fee_receiver_treasury: Pubkey,
+    pub fee_receiver_lp: Pubkey,
+}
+
+#[derive(Accounts)]
+pub struct CreatePool<'info> {
+    #[account(init, payer = admin, space = 8 + 256)]
+    pub pool: Account<'info, Pool>,
+    #[account(mut)]
+    pub admin: Signer<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct UpdateFallbackPrice<'info> {
+    #[account(mut)]
+    pub pool: Account<'info, Pool>,
+    pub admin: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct Sell<'info> {
+    #[account(mut)]
+    pub pool: Account<'info, Pool>,
+    #[account(mut)]
+    pub user: Signer<'info>,
+    #[account(mut)]
+    pub treasury: AccountInfo<'info>,
+    #[account(mut)]
+    pub lp_rewards: AccountInfo<'info>,
+    pub system_program: Program<'info, System>,
+}
