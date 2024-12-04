@@ -1,0 +1,14 @@
+
+pub fn create_pool(
+    ctx: Context<CreatePool>,
+    k: u64,
+    n: u64,
+) -> Result<()> {
+    let pool = &mut ctx.accounts.pool;
+    pool.curve_constant = k;
+    pool.curve_exponent = n;
+    pool.token_supply = 0;
+    pool.liquidity = 0;
+    Ok(())
+}
+
