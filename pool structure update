@@ -1,0 +1,14 @@
+pub struct Pool {
+    pub token_supply: u64,       // Current token supply
+    pub curve_constant: u64,    // Bonding curve constant (k)
+    pub curve_exponent: u64,    // Bonding curve exponent (n)
+    pub market_cap: u64,        // Current market cap
+    pub fee_max: u64,           // Maximum fee (e.g., 30%)
+    pub market_cap_min: u64,    // Minimum market cap (initial)
+    pub decay_rate: u64,        // Decay rate for fee
+    pub treasury_split: u64,    // Percentage of fees for treasury (e.g., 50%)
+    pub fallback_price: u64,    // Default price in SOL if oracle fails
+    pub fallback_last_updated: i64, // Timestamp of the last fallback update
+    pub fee_receiver_treasury: Pubkey, // Treasury address
+    pub fee_receiver_lp: Pubkey,      // LP reward pool address
+}
