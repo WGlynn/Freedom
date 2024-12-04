@@ -1,0 +1,5 @@
+pub fn bonding_curve_price(supply: u64, k: u64, n: u64) -> u64 {
+    // P(S) = k * S^n
+    let price = k * supply.pow(n as u32);
+    price
+}
