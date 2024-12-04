@@ -1,0 +1,72 @@
+use anchor_lang::prelude::*;
+use anchor_lang::solana_program::system_program;
+use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
+
+declare_id!("YourProgramIDHere");
+
+#[program]
+pub mod dynamic_fee_dex {
+    use super::*;
+
+    pub fn create_pool(
+        ctx: Context<CreatePool>,
+        fee_max: u64,
+        market_cap_min: u64,
+        decay_rate: u64,
+        treasury_split: u64,
+        curve_constant: u64,
+        curve_exponent: u64,
+        fallback_price: u64,
+        fee_receiver_treasury: Pubkey,
+        fee_receiver_lp: Pubkey,
+    ) -> Result<()> {
+        let pool = &mut ctx.accounts.pool;
+        pool.token_supply = 0;
+        pool.curve_constant = curve_constant;
+        pool.curve_exponent = curve_exponent;
+        pool.market_cap = market_cap_min;
+        pool.fee_max = fee_max;
+        pool.market_cap_min = market_cap_min;
+        pool.decay_rate = decay_rate;
+        pool.treasury_split = treasury_split;
+        pool.fallback_price = fallback_price;
+        pool.fallback_last_updated = Clock::get()?.unix_timestamp;
+        pool.fee_receiver_treasury = fee_receiver_treasury;
+        pool.fee_receiver_lp = fee_receiver_lp;
+        Ok(())
+    }
+
+    pub fn update_fallback_price(ctx: Context<UpdateFallbackPrice>, new_price: u64) -> Result<()> {
+        let pool = &mut ctx.accounts.pool;
+        require!(ctx.accounts.admin.key() == ctx.accounts.pool.admin, ErrorCode::Unauthorized);
+        pool.fallback_price = new_price;
+        pool.fallback_last_updated = Clock::get()?.unix_timestamp;
+        Ok(())
+    }
+
+    pub fn sell(ctx: Context<Sell>, amount_in: u64) -> Result<()> {
+        let pool = &mut ctx.accounts.pool;
+
+        // Update market cap
+        let price = bonding_curve_price(pool.token_supply, pool.curve_constant, pool.curve_exponent);
+        pool.market_cap = price * pool.token_supply;
+
+        // Calculate fee in SOL
+        let total_fee_in_sol = calculate_fee_in_sol(
+            pool.market_cap,
+            pool.fee_max,
+            pool.market_cap_min,
+            pool.decay_rate,
+            amount_in,
+            pool,
+        )?;
+
+        // Distribute fee to treasury and LPs
+        distribute_fee(ctx, total_fee_in_sol, pool)?;
+
+        // Transfer remaining tokens to user
+        let amount_after_fee = amount_in - (total_fee_in_sol / get_spl_to_sol_price()? as u64);
+        token::transfer(ctx.accounts.user_ctx(), amount_after_fee)?;
+        Ok(())
+    }
+}
