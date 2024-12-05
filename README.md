@@ -1,2 +1,3 @@
 # Freedom
-private
+>> NOTE: dex reward token rewrds moost succesful models
+>> 
